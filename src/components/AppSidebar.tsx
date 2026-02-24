@@ -10,6 +10,7 @@ import {
   LogOut,
   ChevronLeft,
   Menu,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,11 @@ const navItems = [
 ];
 
 export const AppSidebar = () => {
-  const { signOut, user } = useAuth();
+  const { signOut, user, isAdmin } = useAuth();
+  
+  const allNavItems = isAdmin
+    ? [...navItems, { to: "/admin", icon: Shield, label: "Admin" }]
+    : navItems;
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -73,7 +78,7 @@ export const AppSidebar = () => {
 
         {/* Nav */}
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {navItems.map((item) => (
+          {allNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
