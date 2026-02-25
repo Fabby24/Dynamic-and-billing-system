@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Download, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -16,6 +18,8 @@ const statusColors: Record<string, string> = {
 const InvoicesPage = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetch = async () => {
@@ -25,6 +29,49 @@ const InvoicesPage = () => {
     };
     fetch();
   }, []);
+
+  const handleDownloadPdf = async (invoiceId: string, invoiceNumber: string) => {
+    setDownloadingId(invoiceId);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-invoice-pdf`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ invoice_id: invoiceId }),
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to generate PDF");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice-${invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      toast({ title: "PDF downloaded successfully" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   return (
     <AppLayout>
@@ -66,6 +113,19 @@ const InvoicesPage = () => {
                       <p className="text-xs text-muted-foreground">Tax: KES {Number(inv.tax_amount).toLocaleString()}</p>
                     </div>
                     <Badge variant="outline" className={statusColors[inv.status] || ""}>{inv.status}</Badge>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleDownloadPdf(inv.id, inv.invoice_number)}
+                      disabled={downloadingId === inv.id}
+                      title="Download PDF"
+                    >
+                      {downloadingId === inv.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

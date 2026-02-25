@@ -1,1 +1,7 @@
 project_id = "muoyordywtzbizjwwjqa"
+
+[functions.generate-invoice-pdf]
+verify_jwt = false
+
+[functions.send-reservation-confirmed]
+verify_jwt = false
