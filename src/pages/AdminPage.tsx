@@ -287,10 +287,43 @@ function ReservationsTab() {
     mutationFn: async ({ id, status }: { id: string; status: ReservationStatus }) => {
       const { error } = await supabase.from("reservations").update({ status }).eq("id", id);
       if (error) throw error;
+      return { id, status };
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ["admin-reservations"] });
       toast({ title: "Reservation updated" });
+
+      // Send email notification when confirmed
+      if (result.status === "confirmed") {
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData?.session?.access_token;
+          if (!token) return;
+
+          const res = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-reservation-confirmed`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({ reservation_id: result.id }),
+            }
+          );
+
+          if (res.ok) {
+            toast({ title: "Confirmation email sent" });
+          } else {
+            const err = await res.json();
+            console.error("Email send error:", err);
+            toast({ title: "Reservation confirmed but email failed", description: err.error, variant: "destructive" });
+          }
+        } catch (emailErr) {
+          console.error("Email notification error:", emailErr);
+        }
+      }
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
