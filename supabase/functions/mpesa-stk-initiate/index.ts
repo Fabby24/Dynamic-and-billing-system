@@ -59,8 +59,16 @@ Deno.serve(async (req) => {
       `${mpesaBaseUrl}/oauth/v1/generate?grant_type=client_credentials`,
       { headers: { Authorization: `Basic ${authString}` } }
     );
-    const tokenData = await tokenRes.json();
+    const tokenText = await tokenRes.text();
+    let tokenData;
+    try {
+      tokenData = JSON.parse(tokenText);
+    } catch {
+      console.error("OAuth response not JSON:", tokenText);
+      throw new Error(`M-Pesa OAuth failed (${tokenRes.status}): ${tokenText.slice(0, 200)}`);
+    }
     if (!tokenData.access_token) {
+      console.error("No access_token in response:", tokenText);
       throw new Error("Failed to get M-Pesa access token");
     }
 
@@ -105,7 +113,14 @@ Deno.serve(async (req) => {
       }
     );
 
-    const stkData = await stkRes.json();
+    const stkText = await stkRes.text();
+    let stkData;
+    try {
+      stkData = JSON.parse(stkText);
+    } catch {
+      console.error("STK Push response not JSON:", stkText);
+      throw new Error(`STK Push failed (${stkRes.status}): ${stkText.slice(0, 200)}`);
+    }
     console.log("STK Push response:", JSON.stringify(stkData));
 
     if (stkData.ResponseCode !== "0") {
