@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.send-reservation-confirmed]
 verify_jwt = false
+
+[functions.mpesa-stk-initiate]
+verify_jwt = false
+
+[functions.mpesa-stk-callback]
+verify_jwt = false
