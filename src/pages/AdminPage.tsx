@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShieldAlert, Search, Users, Shield, CalendarDays } from "lucide-react";
+import { ShieldAlert, Search, Users, Shield, CalendarDays, MapPin } from "lucide-react";
+import { SpacesAdminTab } from "@/components/admin/SpacesAdminTab";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
@@ -42,13 +43,14 @@ const AdminPage = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-          <p className="text-muted-foreground mt-1">Manage users, roles, and reservations</p>
+          <p className="text-muted-foreground mt-1">Manage users, roles, reservations, and spaces</p>
         </div>
         <Tabs defaultValue="users" className="space-y-4">
           <TabsList>
             <TabsTrigger value="users" className="gap-2"><Users className="h-4 w-4" /> Users</TabsTrigger>
             <TabsTrigger value="roles" className="gap-2"><Shield className="h-4 w-4" /> Roles</TabsTrigger>
             <TabsTrigger value="reservations" className="gap-2"><CalendarDays className="h-4 w-4" /> All Reservations</TabsTrigger>
+            <TabsTrigger value="spaces" className="gap-2"><MapPin className="h-4 w-4" /> Spaces</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
@@ -59,6 +61,9 @@ const AdminPage = () => {
           </TabsContent>
           <TabsContent value="reservations">
             <ReservationsTab />
+          </TabsContent>
+          <TabsContent value="spaces">
+            <SpacesAdminTab />
           </TabsContent>
         </Tabs>
       </div>

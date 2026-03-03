@@ -63,23 +63,49 @@ const ReservationsPage = () => {
     if (!user) return;
 
     const totalCost = calculateCost();
-    const { error } = await supabase.from("reservations").insert([
+    const { data: newRes, error } = await supabase.from("reservations").insert([
       {
         ...form,
         user_id: user.id,
         total_cost: totalCost,
         status: "pending" as const,
       },
-    ]);
+    ]).select().single();
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Reservation created!" });
-      setDialogOpen(false);
-      setForm({ space_id: "", title: "", start_time: "", end_time: "", notes: "" });
-      fetchData();
+      return;
     }
+
+    // Auto-generate invoice
+    const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+    const subtotal = totalCost;
+    const taxRate = 16;
+    const taxAmount = subtotal * (taxRate / 100);
+    const totalAmount = subtotal + taxAmount;
+
+    const { error: invError } = await supabase.from("invoices").insert([{
+      reservation_id: newRes.id,
+      user_id: user.id,
+      invoice_number: invoiceNumber,
+      subtotal,
+      tax_rate: taxRate,
+      tax_amount: taxAmount,
+      total_amount: totalAmount,
+      status: "draft" as const,
+      due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    }]);
+
+    if (invError) {
+      console.error("Invoice creation failed:", invError);
+      toast({ title: "Reservation created but invoice failed", description: invError.message, variant: "destructive" });
+    } else {
+      toast({ title: "Reservation & invoice created!" });
+    }
+
+    setDialogOpen(false);
+    setForm({ space_id: "", title: "", start_time: "", end_time: "", notes: "" });
+    fetchData();
   };
 
   return (
