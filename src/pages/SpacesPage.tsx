@@ -162,8 +162,14 @@ const SpacesPage = () => {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {spaces.map((space) => (
               <Card key={space.id} className="overflow-hidden shadow-card transition-shadow hover:shadow-elevated animate-fade-in">
-                <div className="h-32 gradient-primary flex items-center justify-center">
-                  <MapPin className="h-10 w-10 text-primary-foreground/40" />
+                <div className="h-40 overflow-hidden">
+                  {space.image_url ? (
+                    <img src={space.image_url} alt={space.name} className="h-full w-full object-cover transition-transform hover:scale-105" />
+                  ) : (
+                    <div className="h-full gradient-primary flex items-center justify-center">
+                      <MapPin className="h-10 w-10 text-primary-foreground/40" />
+                    </div>
+                  )}
                 </div>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
