@@ -6,6 +6,45 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchWithRetry = async (
+  url: string,
+  init: RequestInit,
+  { attempts = 3, timeoutMs = 15000 }: { attempts?: number; timeoutMs?: number } = {}
+) => {
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort("Request timeout"), timeoutMs);
+
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal });
+
+      if (response.status >= 500 && attempt < attempts) {
+        const body = await response.text();
+        console.warn(`Retrying ${url} (attempt ${attempt}/${attempts}) due to ${response.status}: ${body.slice(0, 180)}`);
+        await delay(500 * attempt);
+        continue;
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < attempts) {
+        console.warn(`Retrying ${url} (attempt ${attempt}/${attempts}) after network error: ${lastError.message}`);
+        await delay(500 * attempt);
+        continue;
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  throw lastError || new Error("Network request failed");
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -47,7 +86,7 @@ Deno.serve(async (req) => {
     // Get M-Pesa credentials from secrets
     const consumerKey = Deno.env.get("MPESA_CONSUMER_KEY");
     const consumerSecret = Deno.env.get("MPESA_CONSUMER_SECRET");
-    const mpesaBaseUrl = Deno.env.get("MPESA_BASE_URL") || "https://sandbox.safaricom.co.ke";
+    const mpesaBaseUrl = (Deno.env.get("MPESA_BASE_URL")?.trim() || "https://sandbox.safaricom.co.ke").replace(/\/+$/, "");
 
     if (!consumerKey || !consumerSecret) {
       throw new Error("M-Pesa credentials not configured");
@@ -55,9 +94,10 @@ Deno.serve(async (req) => {
 
     // Step 1: Get OAuth token
     const authString = btoa(`${consumerKey}:${consumerSecret}`);
-    const tokenRes = await fetch(
+    const tokenRes = await fetchWithRetry(
       `${mpesaBaseUrl}/oauth/v1/generate?grant_type=client_credentials`,
-      { headers: { Authorization: `Basic ${authString}` } }
+      { headers: { Authorization: `Basic ${authString}` } },
+      { attempts: 3, timeoutMs: 15000 }
     );
     const tokenText = await tokenRes.text();
     let tokenData;
@@ -101,7 +141,7 @@ Deno.serve(async (req) => {
       TransactionDesc: `Payment for invoice`,
     };
 
-    const stkRes = await fetch(
+    const stkRes = await fetchWithRetry(
       `${mpesaBaseUrl}/mpesa/stkpush/v1/processrequest`,
       {
         method: "POST",
@@ -110,7 +150,8 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(stkPayload),
-      }
+      },
+      { attempts: 3, timeoutMs: 20000 }
     );
 
     const stkText = await stkRes.text();
@@ -155,9 +196,19 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("STK Push error:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const isGatewayIssue = /(upstream connect error|connection timeout|temporarily unavailable|request timeout|network)/i.test(message);
+
+    return new Response(
+      JSON.stringify({
+        error: isGatewayIssue
+          ? "M-Pesa gateway is temporarily unavailable. Please retry in a few minutes."
+          : message,
+        details: message,
+      }),
+      {
+        status: isGatewayIssue ? 503 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });
