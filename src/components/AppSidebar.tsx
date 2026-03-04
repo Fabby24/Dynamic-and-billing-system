@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/spaces", icon: Building2, label: "Spaces" },
   { to: "/reservations", icon: CalendarDays, label: "Reservations" },
   { to: "/invoices", icon: FileText, label: "Invoices" },
