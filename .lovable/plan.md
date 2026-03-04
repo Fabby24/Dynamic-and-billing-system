@@ -1,57 +1,54 @@
 
 
-## Landing Page for SpaceHub
+## Plan: Enhanced Landing Page with Dark Mode, Mobile Responsiveness, and Modern Footer
 
-### Overview
-Create an attractive, public landing page at the root route (`/`) that showcases SpaceHub's coworking spaces and drives visitors to sign up or log in. The current dashboard moves to `/dashboard`.
+### 1. Dark Mode Toggle
 
-### Route Changes
-- `/` -- New public landing page (no auth required)
-- `/dashboard` -- Current dashboard (protected)
-- Update `AppSidebar` dashboard link to point to `/dashboard`
+The project already has `next-themes` installed but no `ThemeProvider` wrapping the app. Changes:
 
-### Landing Page Sections (single file: `src/pages/LandingPage.tsx`)
+- **`src/App.tsx`**: Wrap the app with `ThemeProvider` from `next-themes` (attribute="class", defaultTheme="system", enableSystem)
+- **`src/pages/LandingPage.tsx`**: Add a Sun/Moon toggle button in the navbar using `useTheme()` from next-themes
 
-1. **Hero Section**
-   - Full-width background with gradient overlay
-   - Headline: "Premium Workspaces for Modern Teams"
-   - Subtext describing flexible booking
-   - Two CTA buttons: "Get Started" (links to `/auth`) and "Explore Spaces" (scrolls down)
-   - Stats bar: number of spaces, happy clients, cities
+### 2. Enhanced Landing Page (`src/pages/LandingPage.tsx`)
 
-2. **Featured Spaces Section**
-   - Pulls up to 6 available spaces from the database (public read -- spaces table already has RLS allowing select)
-   - Displays them in a responsive grid with images, name, type, capacity, and price
-   - "View All Spaces" button links to `/auth` (must log in to access full app)
+Complete rewrite with richer content and better mobile responsiveness:
 
-3. **Why Choose Us Section**
-   - 3-4 feature cards with icons: Flexible Booking, Premium Amenities, Instant Invoicing, Secure Payments (M-Pesa)
+**Navbar enhancements:**
+- Mobile hamburger menu (Menu/X icon toggle) with slide-down nav links
+- Dark mode toggle button (Sun/Moon icons)
+- Smooth transitions
 
-4. **How It Works Section**
-   - 3 steps: Browse Spaces, Book & Pay, Start Working
-   - Clean numbered cards
+**Hero section enhancements:**
+- Trusted-by logos/badges row beneath the CTA
+- Animated gradient background orbs
+- Better mobile text sizing
 
-5. **Call-to-Action Banner**
-   - "Ready to find your perfect workspace?" with Sign Up button
+**New: Testimonials section**
+- 3 customer testimonial cards with avatar, name, role, and quote
+- Responsive grid (1 col mobile, 3 col desktop)
 
-6. **Footer**
-   - Brand name, copyright, and links
+**New: Pricing preview section**
+- 3 pricing tiers (Hourly, Daily, Monthly) with feature lists
+- Highlight the popular plan
 
-### Design
-- Uses existing Space Grotesk headings, Inter body, gradient-primary, gradient-accent utilities
-- Smooth scroll animations using Tailwind `animate-fade-in`
-- Fully responsive (mobile-first grid)
-- Consistent with the existing premium SaaS aesthetic
+**Enhanced "Why Choose Us"**
+- Add 2 more feature cards (total 6): 24/7 Access, Community Events
+- 2-col on mobile, 3-col on desktop
 
-### Technical Details
+**Modern Footer:**
+- 4-column grid: Company info, Quick Links, Support, Contact
+- Social media icon links: Twitter/X, Facebook, Instagram, LinkedIn, YouTube
+- Newsletter email input
+- Bottom bar with copyright, Privacy Policy, Terms of Service links
+- Fully responsive (stacks on mobile)
 
-**Files to create:**
-- `src/pages/LandingPage.tsx` -- The full landing page component, fetches featured spaces from Supabase
+### 3. Mobile Responsiveness Throughout
+- All grids use responsive breakpoints (grid-cols-1 → sm:grid-cols-2 → lg:grid-cols-3)
+- Text sizes scale with viewport (text-3xl → sm:text-4xl → lg:text-6xl)
+- Padding adjusts for small screens
+- Mobile nav menu with hamburger toggle
 
-**Files to modify:**
-- `src/App.tsx` -- Add LandingPage import, change `/` to LandingPage (public), add `/dashboard` as protected DashboardPage route
-- `src/components/AppSidebar.tsx` -- Update dashboard NavLink `to` prop from `/` to `/dashboard`
-- `src/components/ProtectedRoute.tsx` -- No changes needed (already redirects to `/auth`)
-
-**Database:** No changes needed. The spaces table already allows public select via RLS, so the landing page can fetch featured spaces without authentication.
+### Files to modify:
+1. **`src/App.tsx`** -- Add ThemeProvider wrapper
+2. **`src/pages/LandingPage.tsx`** -- Full enhancement with all new sections, dark mode toggle, mobile menu, modern footer
 
