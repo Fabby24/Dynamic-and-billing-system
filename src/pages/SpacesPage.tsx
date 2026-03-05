@@ -28,6 +28,7 @@ const amenityIcons: Record<string, any> = {
 
 const SpacesPage = () => {
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [spaces, setSpaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
