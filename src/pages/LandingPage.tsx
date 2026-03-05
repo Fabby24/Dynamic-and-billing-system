@@ -213,13 +213,11 @@ const LandingPage = () => {
                 style={{ animationDelay: `${i * 100}ms` }}
               >
                 <div className="relative h-44 sm:h-48 overflow-hidden">
-                  {space.image_url ? (
-                    <img src={space.image_url} alt={space.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center gradient-primary">
-                      <Building2 className="h-12 w-12 text-primary-foreground/60" />
-                    </div>
-                  )}
+                  <img
+                    src={space.image_url && space.image_url.length > 5 ? space.image_url : spaceTypeFallbackImages[space.space_type] || spaceTypeFallbackImages.desk}
+                    alt={space.name}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
                   <div className="absolute top-3 left-3">
                     <span className="rounded-full bg-background/90 px-3 py-1 text-xs font-medium backdrop-blur-sm">
                       {spaceTypeLabels[space.space_type] || space.space_type}
