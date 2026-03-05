@@ -47,6 +47,13 @@ const spaceTypeLabels: Record<string, string> = {
   event_hall: "Event Hall",
 };
 
+const spaceTypeFallbackImages: Record<string, string> = {
+  conference_room: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop",
+  private_office: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=600&h=400&fit=crop",
+  desk: "https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=600&h=400&fit=crop",
+  event_hall: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&h=400&fit=crop",
+};
+
 const LandingPage = () => {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -213,13 +220,11 @@ const LandingPage = () => {
                 style={{ animationDelay: `${i * 100}ms` }}
               >
                 <div className="relative h-44 sm:h-48 overflow-hidden">
-                  {space.image_url ? (
-                    <img src={space.image_url} alt={space.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center gradient-primary">
-                      <Building2 className="h-12 w-12 text-primary-foreground/60" />
-                    </div>
-                  )}
+                  <img
+                    src={space.image_url && space.image_url.length > 5 ? space.image_url : spaceTypeFallbackImages[space.space_type] || spaceTypeFallbackImages.desk}
+                    alt={space.name}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
                   <div className="absolute top-3 left-3">
                     <span className="rounded-full bg-background/90 px-3 py-1 text-xs font-medium backdrop-blur-sm">
                       {spaceTypeLabels[space.space_type] || space.space_type}
