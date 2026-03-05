@@ -127,6 +127,7 @@ const SpacesPage = () => {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         {/* Filters */}
