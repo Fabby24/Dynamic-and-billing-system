@@ -29,6 +29,7 @@ const navItems = [
 
 export const AppSidebar = () => {
   const { signOut, user, isAdmin } = useAuth();
+  const { theme, setTheme } = useTheme();
   
   const allNavItems = isAdmin
     ? [...navItems, { to: "/admin", icon: Shield, label: "Admin" }]
