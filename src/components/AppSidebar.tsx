@@ -36,6 +36,12 @@ export const AppSidebar = () => {
     : navItems;
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close mobile sidebar on route change
+  React.useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   return (
     <>
@@ -47,7 +53,72 @@ export const AppSidebar = () => {
           </div>
           <span className="font-heading text-sm font-bold text-sidebar-foreground">SpaceHub</span>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-sidebar-foreground hover:bg-sidebar-accent"
+          onClick={() => setMobileOpen(!mobileOpen)}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
       </div>
+
+      {/* Mobile sidebar overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <aside
+            className="absolute left-0 top-14 bottom-0 w-60 flex flex-col border-r border-sidebar-border bg-sidebar"
+            style={{ background: "var(--gradient-sidebar)" }}
+          >
+            <nav className="flex-1 space-y-1 px-3 py-4">
+              {allNavItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/"}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )
+                  }
+                >
+                  <item.icon className="h-5 w-5 shrink-0" />
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+            <div className="border-t border-sidebar-border p-3">
+              <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-bold text-sidebar-accent-foreground">
+                  {user?.email?.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="truncate text-sm font-medium text-sidebar-foreground">{user?.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+              >
+                <Sun className="h-4 w-4 shrink-0 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 shrink-0 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+              </button>
+              <button
+                onClick={signOut}
+                className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+              >
+                <LogOut className="h-4 w-4 shrink-0" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
 
       {/* Sidebar */}
       <aside
