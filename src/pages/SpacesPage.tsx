@@ -28,6 +28,7 @@ const amenityIcons: Record<string, any> = {
 
 const SpacesPage = () => {
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [spaces, setSpaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -78,6 +79,7 @@ const SpacesPage = () => {
             <h1 className="font-heading text-2xl font-bold text-foreground">Spaces</h1>
             <p className="text-sm text-muted-foreground">Manage your workspaces and meeting rooms</p>
           </div>
+          {isAdmin && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gradient-primary text-primary-foreground">
@@ -126,6 +128,7 @@ const SpacesPage = () => {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         {/* Filters */}
