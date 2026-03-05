@@ -47,6 +47,13 @@ const spaceTypeLabels: Record<string, string> = {
   event_hall: "Event Hall",
 };
 
+const spaceTypeFallbackImages: Record<string, string> = {
+  conference_room: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop",
+  private_office: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=600&h=400&fit=crop",
+  desk: "https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=600&h=400&fit=crop",
+  event_hall: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&h=400&fit=crop",
+};
+
 const LandingPage = () => {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
