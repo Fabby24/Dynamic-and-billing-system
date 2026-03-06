@@ -122,7 +122,8 @@ export function SpacesAdminTab() {
         </Button>
       </div>
 
-      <div className="rounded-lg border bg-card">
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -168,6 +169,44 @@ export function SpacesAdminTab() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading…</div>
+        ) : spaces?.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">No spaces</div>
+        ) : (
+          spaces?.map((s) => (
+            <div key={s.id} className="rounded-lg border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-foreground truncate">{s.name}</p>
+                <Badge variant={s.is_available ? "default" : "secondary"}>
+                  {s.is_available ? "Available" : "Unavailable"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>{spaceTypeLabels[s.space_type]}</span>
+                <span>Cap: {s.capacity}</span>
+              </div>
+              <p className="font-heading font-bold text-foreground">KES {Number(s.hourly_rate).toLocaleString()}/hr</p>
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => openEdit(s)}>
+                  <Pencil className="h-3 w-3 mr-1" /> Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant={s.is_available ? "secondary" : "default"}
+                  className="flex-1"
+                  onClick={() => toggleAvailability.mutate({ id: s.id, is_available: !s.is_available })}
+                >
+                  {s.is_available ? "Disable" : "Enable"}
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

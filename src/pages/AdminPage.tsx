@@ -431,7 +431,9 @@ function ReservationsTab() {
           <SelectItem value="completed">Completed</SelectItem>
         </SelectContent>
       </Select>
-      <div className="rounded-lg border bg-card">
+
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -476,6 +478,38 @@ function ReservationsTab() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading…</div>
+        ) : filtered?.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">No reservations found</div>
+        ) : (
+          filtered?.map((r) => (
+            <div key={r.id} className="rounded-lg border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-foreground truncate">{r.title || "—"}</p>
+                <Badge variant={statusColor(r.status) as any}>{r.status}</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{r.profile?.full_name || r.profile?.email || "—"} · {(r.spaces as any)?.name || "—"}</p>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{format(new Date(r.start_time), "MMM d, HH:mm")} → {format(new Date(r.end_time), "MMM d, HH:mm")}</span>
+              </div>
+              <p className="font-heading font-bold text-foreground">KES {Number(r.total_cost).toLocaleString()}</p>
+              {r.status === "pending" && (
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" className="flex-1" onClick={() => updateStatus.mutate({ id: r.id, status: "confirmed" })}>Confirm</Button>
+                  <Button size="sm" variant="destructive" className="flex-1" onClick={() => updateStatus.mutate({ id: r.id, status: "cancelled" })}>Cancel</Button>
+                </div>
+              )}
+              {r.status === "confirmed" && (
+                <Button size="sm" variant="destructive" className="w-full" onClick={() => updateStatus.mutate({ id: r.id, status: "cancelled" })}>Cancel</Button>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
