@@ -46,11 +46,11 @@ const AdminPage = () => {
           <p className="text-muted-foreground mt-1">Manage users, roles, reservations, and spaces</p>
         </div>
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="users" className="gap-2"><Users className="h-4 w-4" /> Users</TabsTrigger>
-            <TabsTrigger value="roles" className="gap-2"><Shield className="h-4 w-4" /> Roles</TabsTrigger>
-            <TabsTrigger value="reservations" className="gap-2"><CalendarDays className="h-4 w-4" /> All Reservations</TabsTrigger>
-            <TabsTrigger value="spaces" className="gap-2"><MapPin className="h-4 w-4" /> Spaces</TabsTrigger>
+          <TabsList className="w-full flex overflow-x-auto">
+            <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm"><Users className="h-4 w-4" /> <span className="hidden sm:inline">Users</span><span className="sm:hidden">Users</span></TabsTrigger>
+            <TabsTrigger value="roles" className="gap-1.5 text-xs sm:text-sm"><Shield className="h-4 w-4" /> <span className="hidden sm:inline">Roles</span><span className="sm:hidden">Roles</span></TabsTrigger>
+            <TabsTrigger value="reservations" className="gap-1.5 text-xs sm:text-sm"><CalendarDays className="h-4 w-4" /> <span className="hidden sm:inline">All Reservations</span><span className="sm:hidden">Bookings</span></TabsTrigger>
+            <TabsTrigger value="spaces" className="gap-1.5 text-xs sm:text-sm"><MapPin className="h-4 w-4" /> <span className="hidden sm:inline">Spaces</span><span className="sm:hidden">Spaces</span></TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
@@ -109,7 +109,9 @@ function UsersTab({ search, setSearch }: { search: string; setSearch: (s: string
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input placeholder="Search by name or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
-      <div className="rounded-lg border bg-card">
+
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -153,6 +155,39 @@ function UsersTab({ search, setSearch }: { search: string; setSearch: (s: string
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading…</div>
+        ) : filtered?.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">No users found</div>
+        ) : (
+          filtered?.map((p) => (
+            <div key={p.id} className="rounded-lg border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-foreground truncate">{p.full_name || "—"}</p>
+                <Badge variant={p.is_active ? "default" : "secondary"}>
+                  {p.is_active ? "Active" : "Inactive"}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground truncate">{p.email}</p>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{p.phone || "No phone"}</span>
+                <span>{format(new Date(p.created_at), "MMM d, yyyy")}</span>
+              </div>
+              <Button
+                size="sm"
+                variant={p.is_active ? "outline" : "default"}
+                className="w-full mt-1"
+                onClick={() => toggleActive.mutate({ id: p.id, is_active: !p.is_active })}
+              >
+                {p.is_active ? "Deactivate" : "Activate"}
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -195,7 +230,8 @@ function RolesTab() {
 
   return (
     <>
-      <div className="rounded-lg border bg-card">
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -242,6 +278,42 @@ function RolesTab() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading…</div>
+        ) : (
+          roles?.map((r) => (
+            <div key={r.id} className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-foreground truncate">{r.profile?.full_name || "—"}</p>
+                <Badge variant={r.role === "admin" ? "destructive" : r.role === "accountant" ? "outline" : "secondary"}>
+                  {r.role}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground truncate">{r.profile?.email || "—"}</p>
+              <Select
+                value={r.role}
+                onValueChange={(val: AppRole) => {
+                  if (val !== r.role) {
+                    setConfirmDialog({ userId: r.user_id, userName: r.profile?.full_name || r.profile?.email || "this user", newRole: val });
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="accountant">Accountant</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ))
+        )}
       </div>
 
       <Dialog open={!!confirmDialog} onOpenChange={() => setConfirmDialog(null)}>
@@ -359,7 +431,9 @@ function ReservationsTab() {
           <SelectItem value="completed">Completed</SelectItem>
         </SelectContent>
       </Select>
-      <div className="rounded-lg border bg-card">
+
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -404,6 +478,38 @@ function ReservationsTab() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading…</div>
+        ) : filtered?.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">No reservations found</div>
+        ) : (
+          filtered?.map((r) => (
+            <div key={r.id} className="rounded-lg border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-foreground truncate">{r.title || "—"}</p>
+                <Badge variant={statusColor(r.status) as any}>{r.status}</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{r.profile?.full_name || r.profile?.email || "—"} · {(r.spaces as any)?.name || "—"}</p>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{format(new Date(r.start_time), "MMM d, HH:mm")} → {format(new Date(r.end_time), "MMM d, HH:mm")}</span>
+              </div>
+              <p className="font-heading font-bold text-foreground">KES {Number(r.total_cost).toLocaleString()}</p>
+              {r.status === "pending" && (
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" className="flex-1" onClick={() => updateStatus.mutate({ id: r.id, status: "confirmed" })}>Confirm</Button>
+                  <Button size="sm" variant="destructive" className="flex-1" onClick={() => updateStatus.mutate({ id: r.id, status: "cancelled" })}>Cancel</Button>
+                </div>
+              )}
+              {r.status === "confirmed" && (
+                <Button size="sm" variant="destructive" className="w-full" onClick={() => updateStatus.mutate({ id: r.id, status: "cancelled" })}>Cancel</Button>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

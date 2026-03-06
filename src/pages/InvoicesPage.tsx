@@ -149,51 +149,55 @@ const InvoicesPage = () => {
           <div className="space-y-3">
             {invoices.map((inv) => (
               <Card key={inv.id} className="shadow-card animate-fade-in">
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-accent">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent">
                       <FileText className="h-5 w-5 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">#{inv.invoice_number}</p>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-medium text-foreground truncate">#{inv.invoice_number}</p>
+                        <Badge variant="outline" className={`shrink-0 ${statusColors[inv.status] || ""}`}>{inv.status}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {new Date(inv.created_at).toLocaleDateString()} · Due {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "N/A"}
                       </p>
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="font-heading font-bold text-foreground">KES {Number(inv.total_amount).toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">Tax: KES {Number(inv.tax_amount).toLocaleString()}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {inv.status !== "paid" && inv.status !== "cancelled" && (
+                            <Button
+                              size="sm"
+                              onClick={() => openPayDialog(inv)}
+                              disabled={payingId === inv.id}
+                            >
+                              {payingId === inv.id ? (
+                                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                              ) : (
+                                <CreditCard className="mr-1 h-4 w-4" />
+                              )}
+                              Pay
+                            </Button>
+                          )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDownloadPdf(inv.id, inv.invoice_number)}
+                            disabled={downloadingId === inv.id}
+                            title="Download PDF"
+                          >
+                            {downloadingId === inv.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="font-heading font-bold text-foreground">KES {Number(inv.total_amount).toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">Tax: KES {Number(inv.tax_amount).toLocaleString()}</p>
-                    </div>
-                    <Badge variant="outline" className={statusColors[inv.status] || ""}>{inv.status}</Badge>
-                    {inv.status !== "paid" && inv.status !== "cancelled" && (
-                      <Button
-                        size="sm"
-                        onClick={() => openPayDialog(inv)}
-                        disabled={payingId === inv.id}
-                      >
-                        {payingId === inv.id ? (
-                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                        ) : (
-                          <CreditCard className="mr-1 h-4 w-4" />
-                        )}
-                        Pay Now
-                      </Button>
-                    )}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDownloadPdf(inv.id, inv.invoice_number)}
-                      disabled={downloadingId === inv.id}
-                      title="Download PDF"
-                    >
-                      {downloadingId === inv.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Download className="h-4 w-4" />
-                      )}
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
