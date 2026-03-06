@@ -230,7 +230,8 @@ function RolesTab() {
 
   return (
     <>
-      <div className="rounded-lg border bg-card">
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -277,6 +278,42 @@ function RolesTab() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading…</div>
+        ) : (
+          roles?.map((r) => (
+            <div key={r.id} className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-foreground truncate">{r.profile?.full_name || "—"}</p>
+                <Badge variant={r.role === "admin" ? "destructive" : r.role === "accountant" ? "outline" : "secondary"}>
+                  {r.role}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground truncate">{r.profile?.email || "—"}</p>
+              <Select
+                value={r.role}
+                onValueChange={(val: AppRole) => {
+                  if (val !== r.role) {
+                    setConfirmDialog({ userId: r.user_id, userName: r.profile?.full_name || r.profile?.email || "this user", newRole: val });
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="accountant">Accountant</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ))
+        )}
       </div>
 
       <Dialog open={!!confirmDialog} onOpenChange={() => setConfirmDialog(null)}>
