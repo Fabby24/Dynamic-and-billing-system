@@ -46,11 +46,11 @@ const AdminPage = () => {
           <p className="text-muted-foreground mt-1">Manage users, roles, reservations, and spaces</p>
         </div>
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="users" className="gap-2"><Users className="h-4 w-4" /> Users</TabsTrigger>
-            <TabsTrigger value="roles" className="gap-2"><Shield className="h-4 w-4" /> Roles</TabsTrigger>
-            <TabsTrigger value="reservations" className="gap-2"><CalendarDays className="h-4 w-4" /> All Reservations</TabsTrigger>
-            <TabsTrigger value="spaces" className="gap-2"><MapPin className="h-4 w-4" /> Spaces</TabsTrigger>
+          <TabsList className="w-full flex overflow-x-auto">
+            <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm"><Users className="h-4 w-4" /> <span className="hidden sm:inline">Users</span><span className="sm:hidden">Users</span></TabsTrigger>
+            <TabsTrigger value="roles" className="gap-1.5 text-xs sm:text-sm"><Shield className="h-4 w-4" /> <span className="hidden sm:inline">Roles</span><span className="sm:hidden">Roles</span></TabsTrigger>
+            <TabsTrigger value="reservations" className="gap-1.5 text-xs sm:text-sm"><CalendarDays className="h-4 w-4" /> <span className="hidden sm:inline">All Reservations</span><span className="sm:hidden">Bookings</span></TabsTrigger>
+            <TabsTrigger value="spaces" className="gap-1.5 text-xs sm:text-sm"><MapPin className="h-4 w-4" /> <span className="hidden sm:inline">Spaces</span><span className="sm:hidden">Spaces</span></TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
