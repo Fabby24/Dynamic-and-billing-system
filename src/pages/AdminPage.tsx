@@ -418,12 +418,43 @@ function ReservationsTab() {
       // fetch profiles for user names
       const userIds = [...new Set(data.map((r) => r.user_id))];
       const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, email").in("user_id", userIds);
-      return data.map((r) => ({
-        ...r,
-        profile: profiles?.find((p) => p.user_id === r.user_id),
-      }));
+
+      // fetch invoice payment status for each reservation
+      const resIds = data.map((r) => r.id);
+      const { data: invoices } = await supabase
+        .from("invoices")
+        .select("id, reservation_id, status")
+        .in("reservation_id", resIds);
+
+      const invoiceIds = invoices?.map((i) => i.id) || [];
+      const { data: payments } = invoiceIds.length > 0
+        ? await supabase.from("payments").select("invoice_id, status").in("invoice_id", invoiceIds)
+        : { data: [] };
+
+      return data.map((r) => {
+        const invoice = invoices?.find((i) => i.reservation_id === r.id);
+        const payment = payments?.find((p) => p.invoice_id === invoice?.id && p.status === "completed");
+        return {
+          ...r,
+          profile: profiles?.find((p) => p.user_id === r.user_id),
+          isPaid: !!payment,
+          invoiceStatus: invoice?.status || null,
+        };
+      });
     },
   });
+
+  const handleConfirm = async (reservationId: string, isPaid: boolean) => {
+    if (!isPaid) {
+      toast({
+        title: "Cannot confirm",
+        description: "This reservation has not been paid for yet. Payment must be completed before confirmation.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateStatus.mutate({ id: reservationId, status: "confirmed" });
+  };
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: ReservationStatus }) => {
@@ -508,15 +539,16 @@ function ReservationsTab() {
               <TableHead>Start</TableHead>
               <TableHead>End</TableHead>
               <TableHead>Cost</TableHead>
+              <TableHead>Payment</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : filtered?.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No reservations found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No reservations found</TableCell></TableRow>
             ) : (
               filtered?.map((r) => (
                 <TableRow key={r.id}>
@@ -526,11 +558,23 @@ function ReservationsTab() {
                   <TableCell>{format(new Date(r.start_time), "MMM d, HH:mm")}</TableCell>
                   <TableCell>{format(new Date(r.end_time), "MMM d, HH:mm")}</TableCell>
                   <TableCell>KES {Number(r.total_cost).toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Badge variant={r.isPaid ? "default" : "secondary"}>
+                      {r.isPaid ? "Paid" : "Unpaid"}
+                    </Badge>
+                  </TableCell>
                   <TableCell><Badge variant={statusColor(r.status) as any}>{r.status}</Badge></TableCell>
                   <TableCell className="text-right space-x-2">
                     {r.status === "pending" && (
                       <>
-                        <Button size="sm" onClick={() => updateStatus.mutate({ id: r.id, status: "confirmed" })}>Confirm</Button>
+                        <Button
+                          size="sm"
+                          disabled={!r.isPaid}
+                          onClick={() => handleConfirm(r.id, r.isPaid)}
+                          title={!r.isPaid ? "Payment required before confirmation" : ""}
+                        >
+                          {r.isPaid ? "Confirm" : "Awaiting Payment"}
+                        </Button>
                         <Button size="sm" variant="destructive" onClick={() => updateStatus.mutate({ id: r.id, status: "cancelled" })}>Cancel</Button>
                       </>
                     )}
@@ -562,10 +606,22 @@ function ReservationsTab() {
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{format(new Date(r.start_time), "MMM d, HH:mm")} → {format(new Date(r.end_time), "MMM d, HH:mm")}</span>
               </div>
-              <p className="font-heading font-bold text-foreground">KES {Number(r.total_cost).toLocaleString()}</p>
+              <div className="flex items-center justify-between">
+                <p className="font-heading font-bold text-foreground">KES {Number(r.total_cost).toLocaleString()}</p>
+                <Badge variant={r.isPaid ? "default" : "secondary"}>
+                  {r.isPaid ? "Paid" : "Unpaid"}
+                </Badge>
+              </div>
               {r.status === "pending" && (
                 <div className="flex gap-2 pt-1">
-                  <Button size="sm" className="flex-1" onClick={() => updateStatus.mutate({ id: r.id, status: "confirmed" })}>Confirm</Button>
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    disabled={!r.isPaid}
+                    onClick={() => handleConfirm(r.id, r.isPaid)}
+                  >
+                    {r.isPaid ? "Confirm" : "Awaiting Payment"}
+                  </Button>
                   <Button size="sm" variant="destructive" className="flex-1" onClick={() => updateStatus.mutate({ id: r.id, status: "cancelled" })}>Cancel</Button>
                 </div>
               )}
