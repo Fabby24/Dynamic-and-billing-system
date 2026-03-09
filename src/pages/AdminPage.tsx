@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShieldAlert, Search, Users, Shield, CalendarDays, MapPin } from "lucide-react";
+import { ShieldAlert, Search, Users, Shield, CalendarDays, MapPin, Bell } from "lucide-react";
 import { SpacesAdminTab } from "@/components/admin/SpacesAdminTab";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -24,6 +24,50 @@ const AdminPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [notifications, setNotifications] = useState<{ id: string; type: string; message: string; time: Date }[]>([]);
+
+  // Realtime notifications for new reservations and payments
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const channel = supabase
+      .channel('admin-notifications')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'reservations' },
+        (payload) => {
+          const newNotif = {
+            id: payload.new.id,
+            type: 'reservation',
+            message: `New reservation: "${payload.new.title || 'Untitled'}"`,
+            time: new Date(),
+          };
+          setNotifications((prev) => [newNotif, ...prev].slice(0, 20));
+          toast({ title: "🔔 New Reservation", description: newNotif.message });
+          queryClient.invalidateQueries({ queryKey: ["admin-reservations"] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'payments' },
+        (payload) => {
+          const newNotif = {
+            id: payload.new.id,
+            type: 'payment',
+            message: `New payment of KES ${Number(payload.new.amount).toLocaleString()}`,
+            time: new Date(),
+          };
+          setNotifications((prev) => [newNotif, ...prev].slice(0, 20));
+          toast({ title: "💰 New Payment", description: newNotif.message });
+          queryClient.invalidateQueries({ queryKey: ["admin-reservations"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, toast, queryClient]);
 
   // --- Access denied ---
   if (!isAdmin) {
@@ -41,10 +85,31 @@ const AdminPage = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-          <p className="text-muted-foreground mt-1">Manage users, roles, reservations, and spaces</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
+            <p className="text-muted-foreground mt-1">Manage users, roles, reservations, and spaces</p>
+          </div>
+          {notifications.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              <Badge variant="default">{notifications.length} new</Badge>
+            </div>
+          )}
         </div>
+
+        {/* Recent notifications banner */}
+        {notifications.length > 0 && (
+          <div className="rounded-lg border bg-accent/50 p-3 space-y-1">
+            <p className="text-sm font-medium text-foreground">Recent Activity</p>
+            {notifications.slice(0, 5).map((n) => (
+              <p key={n.id} className="text-xs text-muted-foreground">
+                {n.type === 'reservation' ? '📅' : '💰'} {n.message} — {n.time.toLocaleTimeString()}
+              </p>
+            ))}
+          </div>
+        )}
+
         <Tabs defaultValue="users" className="space-y-4">
           <TabsList className="w-full flex overflow-x-auto">
             <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm"><Users className="h-4 w-4" /> <span className="hidden sm:inline">Users</span><span className="sm:hidden">Users</span></TabsTrigger>
@@ -353,12 +418,43 @@ function ReservationsTab() {
       // fetch profiles for user names
       const userIds = [...new Set(data.map((r) => r.user_id))];
       const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, email").in("user_id", userIds);
-      return data.map((r) => ({
-        ...r,
-        profile: profiles?.find((p) => p.user_id === r.user_id),
-      }));
+
+      // fetch invoice payment status for each reservation
+      const resIds = data.map((r) => r.id);
+      const { data: invoices } = await supabase
+        .from("invoices")
+        .select("id, reservation_id, status")
+        .in("reservation_id", resIds);
+
+      const invoiceIds = invoices?.map((i) => i.id) || [];
+      const { data: payments } = invoiceIds.length > 0
+        ? await supabase.from("payments").select("invoice_id, status").in("invoice_id", invoiceIds)
+        : { data: [] };
+
+      return data.map((r) => {
+        const invoice = invoices?.find((i) => i.reservation_id === r.id);
+        const payment = payments?.find((p) => p.invoice_id === invoice?.id && p.status === "completed");
+        return {
+          ...r,
+          profile: profiles?.find((p) => p.user_id === r.user_id),
+          isPaid: !!payment,
+          invoiceStatus: invoice?.status || null,
+        };
+      });
     },
   });
+
+  const handleConfirm = async (reservationId: string, isPaid: boolean) => {
+    if (!isPaid) {
+      toast({
+        title: "Cannot confirm",
+        description: "This reservation has not been paid for yet. Payment must be completed before confirmation.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateStatus.mutate({ id: reservationId, status: "confirmed" });
+  };
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: ReservationStatus }) => {
@@ -443,15 +539,16 @@ function ReservationsTab() {
               <TableHead>Start</TableHead>
               <TableHead>End</TableHead>
               <TableHead>Cost</TableHead>
+              <TableHead>Payment</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : filtered?.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No reservations found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No reservations found</TableCell></TableRow>
             ) : (
               filtered?.map((r) => (
                 <TableRow key={r.id}>
@@ -461,11 +558,23 @@ function ReservationsTab() {
                   <TableCell>{format(new Date(r.start_time), "MMM d, HH:mm")}</TableCell>
                   <TableCell>{format(new Date(r.end_time), "MMM d, HH:mm")}</TableCell>
                   <TableCell>KES {Number(r.total_cost).toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Badge variant={r.isPaid ? "default" : "secondary"}>
+                      {r.isPaid ? "Paid" : "Unpaid"}
+                    </Badge>
+                  </TableCell>
                   <TableCell><Badge variant={statusColor(r.status) as any}>{r.status}</Badge></TableCell>
                   <TableCell className="text-right space-x-2">
                     {r.status === "pending" && (
                       <>
-                        <Button size="sm" onClick={() => updateStatus.mutate({ id: r.id, status: "confirmed" })}>Confirm</Button>
+                        <Button
+                          size="sm"
+                          disabled={!r.isPaid}
+                          onClick={() => handleConfirm(r.id, r.isPaid)}
+                          title={!r.isPaid ? "Payment required before confirmation" : ""}
+                        >
+                          {r.isPaid ? "Confirm" : "Awaiting Payment"}
+                        </Button>
                         <Button size="sm" variant="destructive" onClick={() => updateStatus.mutate({ id: r.id, status: "cancelled" })}>Cancel</Button>
                       </>
                     )}
@@ -497,10 +606,22 @@ function ReservationsTab() {
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{format(new Date(r.start_time), "MMM d, HH:mm")} → {format(new Date(r.end_time), "MMM d, HH:mm")}</span>
               </div>
-              <p className="font-heading font-bold text-foreground">KES {Number(r.total_cost).toLocaleString()}</p>
+              <div className="flex items-center justify-between">
+                <p className="font-heading font-bold text-foreground">KES {Number(r.total_cost).toLocaleString()}</p>
+                <Badge variant={r.isPaid ? "default" : "secondary"}>
+                  {r.isPaid ? "Paid" : "Unpaid"}
+                </Badge>
+              </div>
               {r.status === "pending" && (
                 <div className="flex gap-2 pt-1">
-                  <Button size="sm" className="flex-1" onClick={() => updateStatus.mutate({ id: r.id, status: "confirmed" })}>Confirm</Button>
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    disabled={!r.isPaid}
+                    onClick={() => handleConfirm(r.id, r.isPaid)}
+                  >
+                    {r.isPaid ? "Confirm" : "Awaiting Payment"}
+                  </Button>
                   <Button size="sm" variant="destructive" className="flex-1" onClick={() => updateStatus.mutate({ id: r.id, status: "cancelled" })}>Cancel</Button>
                 </div>
               )}

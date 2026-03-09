@@ -24,6 +24,9 @@ const navItems = [
   { to: "/reservations", icon: CalendarDays, label: "Reservations" },
   { to: "/invoices", icon: FileText, label: "Invoices" },
   { to: "/payments", icon: CreditCard, label: "Payments" },
+];
+
+const adminOnlyNavItems = [
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
 ];
 
@@ -32,7 +35,7 @@ export const AppSidebar = () => {
   const { theme, setTheme } = useTheme();
   
   const allNavItems = isAdmin
-    ? [...navItems, { to: "/admin", icon: Shield, label: "Admin" }]
+    ? [...navItems, ...adminOnlyNavItems, { to: "/admin", icon: Shield, label: "Admin" }]
     : navItems;
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
