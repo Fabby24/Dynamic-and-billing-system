@@ -24,6 +24,50 @@ const AdminPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [notifications, setNotifications] = useState<{ id: string; type: string; message: string; time: Date }[]>([]);
+
+  // Realtime notifications for new reservations and payments
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const channel = supabase
+      .channel('admin-notifications')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'reservations' },
+        (payload) => {
+          const newNotif = {
+            id: payload.new.id,
+            type: 'reservation',
+            message: `New reservation: "${payload.new.title || 'Untitled'}"`,
+            time: new Date(),
+          };
+          setNotifications((prev) => [newNotif, ...prev].slice(0, 20));
+          toast({ title: "🔔 New Reservation", description: newNotif.message });
+          queryClient.invalidateQueries({ queryKey: ["admin-reservations"] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'payments' },
+        (payload) => {
+          const newNotif = {
+            id: payload.new.id,
+            type: 'payment',
+            message: `New payment of KES ${Number(payload.new.amount).toLocaleString()}`,
+            time: new Date(),
+          };
+          setNotifications((prev) => [newNotif, ...prev].slice(0, 20));
+          toast({ title: "💰 New Payment", description: newNotif.message });
+          queryClient.invalidateQueries({ queryKey: ["admin-reservations"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, toast, queryClient]);
 
   // --- Access denied ---
   if (!isAdmin) {
@@ -41,10 +85,31 @@ const AdminPage = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-          <p className="text-muted-foreground mt-1">Manage users, roles, reservations, and spaces</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
+            <p className="text-muted-foreground mt-1">Manage users, roles, reservations, and spaces</p>
+          </div>
+          {notifications.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              <Badge variant="default">{notifications.length} new</Badge>
+            </div>
+          )}
         </div>
+
+        {/* Recent notifications banner */}
+        {notifications.length > 0 && (
+          <div className="rounded-lg border bg-accent/50 p-3 space-y-1">
+            <p className="text-sm font-medium text-foreground">Recent Activity</p>
+            {notifications.slice(0, 5).map((n) => (
+              <p key={n.id} className="text-xs text-muted-foreground">
+                {n.type === 'reservation' ? '📅' : '💰'} {n.message} — {n.time.toLocaleTimeString()}
+              </p>
+            ))}
+          </div>
+        )}
+
         <Tabs defaultValue="users" className="space-y-4">
           <TabsList className="w-full flex overflow-x-auto">
             <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm"><Users className="h-4 w-4" /> <span className="hidden sm:inline">Users</span><span className="sm:hidden">Users</span></TabsTrigger>
