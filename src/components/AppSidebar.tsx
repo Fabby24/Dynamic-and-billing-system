@@ -35,7 +35,7 @@ export const AppSidebar = () => {
   const { theme, setTheme } = useTheme();
   
   const allNavItems = isAdmin
-    ? [...navItems, { to: "/admin", icon: Shield, label: "Admin" }]
+    ? [...navItems, ...adminOnlyNavItems, { to: "/admin", icon: Shield, label: "Admin" }]
     : navItems;
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
