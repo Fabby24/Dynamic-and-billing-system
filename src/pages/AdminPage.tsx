@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ShieldAlert, Search, Users, Shield, CalendarD, Bellays, ays, MapPin, Bellcide-react";
+import { ShieldAlert, Search, Users, Shield, CalendarDays, MapPin, Bell } from "lucide-react";
 import { SpacesAdminTab } from "@/components/admin/SpacesAdminTab";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
