@@ -24,6 +24,9 @@ const navItems = [
   { to: "/reservations", icon: CalendarDays, label: "Reservations" },
   { to: "/invoices", icon: FileText, label: "Invoices" },
   { to: "/payments", icon: CreditCard, label: "Payments" },
+];
+
+const adminOnlyNavItems = [
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
 ];
 
