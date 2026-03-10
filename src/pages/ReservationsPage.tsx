@@ -21,7 +21,7 @@ const statusColors: Record<string, string> = {
 };
 
 const ReservationsPage = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [reservations, setReservations] = useState<any[]>([]);
   const [spaces, setSpaces] = useState<any[]>([]);
@@ -116,56 +116,58 @@ const ReservationsPage = () => {
             <h1 className="font-heading text-2xl font-bold text-foreground">Reservations</h1>
             <p className="text-sm text-muted-foreground">Manage your space bookings</p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gradient-primary text-primary-foreground">
-                <Plus className="mr-2 h-4 w-4" /> New Reservation
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="font-heading">Create Reservation</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleCreate} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Space</Label>
-                  <Select value={form.space_id} onValueChange={(v) => setForm({ ...form, space_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select a space" /></SelectTrigger>
-                    <SelectContent>
-                      {spaces.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name} — KES {s.hourly_rate}/hr</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required placeholder="Team standup" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
+          {!isAdmin && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gradient-primary text-primary-foreground">
+                  <Plus className="mr-2 h-4 w-4" /> New Reservation
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="font-heading">Create Reservation</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCreate} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Start</Label>
-                    <Input type="datetime-local" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} required />
+                    <Label>Space</Label>
+                    <Select value={form.space_id} onValueChange={(v) => setForm({ ...form, space_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="Select a space" /></SelectTrigger>
+                      <SelectContent>
+                        {spaces.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>{s.name} — KES {s.hourly_rate}/hr</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>End</Label>
-                    <Input type="datetime-local" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} required />
+                    <Label>Title</Label>
+                    <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required placeholder="Team standup" />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Notes</Label>
-                  <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-                </div>
-                {calculateCost() > 0 && (
-                  <div className="rounded-lg bg-accent p-3 text-center">
-                    <p className="text-sm text-muted-foreground">Estimated Cost</p>
-                    <p className="font-heading text-xl font-bold text-foreground">KES {calculateCost().toLocaleString()}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Start</Label>
+                      <Input type="datetime-local" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>End</Label>
+                      <Input type="datetime-local" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} required />
+                    </div>
                   </div>
-                )}
-                <Button type="submit" className="w-full gradient-primary text-primary-foreground">Create Reservation</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <div className="space-y-2">
+                    <Label>Notes</Label>
+                    <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                  </div>
+                  {calculateCost() > 0 && (
+                    <div className="rounded-lg bg-accent p-3 text-center">
+                      <p className="text-sm text-muted-foreground">Estimated Cost</p>
+                      <p className="font-heading text-xl font-bold text-foreground">KES {calculateCost().toLocaleString()}</p>
+                    </div>
+                  )}
+                  <Button type="submit" className="w-full gradient-primary text-primary-foreground">Create Reservation</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         {loading ? (
