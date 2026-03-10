@@ -21,7 +21,7 @@ const statusColors: Record<string, string> = {
 };
 
 const ReservationsPage = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [reservations, setReservations] = useState<any[]>([]);
   const [spaces, setSpaces] = useState<any[]>([]);
