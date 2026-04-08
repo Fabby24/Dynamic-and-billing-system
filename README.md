@@ -167,9 +167,4 @@ This project is licensed under the MIT License. See `LICENSE` for details.
 ## Support
 
 For issues or questions, open a GitHub issue or contact the maintainers.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-
-
-
-"# Dynamic-and-billing-system" 
