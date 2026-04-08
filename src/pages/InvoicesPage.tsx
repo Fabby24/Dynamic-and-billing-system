@@ -39,12 +39,12 @@ const InvoicesPage = () => {
   const handleDownloadPdf = async (invoiceId: string, invoiceNumber: string) => {
     setDownloadingId(invoiceId);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
       if (!token) throw new Error("Not authenticated");
-
+      console.log('token preview:', token ? token.slice(0, 10): token);
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-invoice-pdf`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice-pdf`,
         {
           method: "POST",
           headers: {
